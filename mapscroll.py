@@ -2,8 +2,11 @@
 from bearlibterminal import terminal
 import noise
 
-MAP_WIDTH = 80
-MAP_HEIGHT = 50
+MAP_WIDTH = 256
+MAP_HEIGHT = 256
+
+SCREEN_WIDTH = 80
+SCREEN_HEIGHT = 50
 
 class World:
     """Game world object"""
@@ -17,33 +20,45 @@ class World:
         self.player_x = 40
         self.player_y = 20
 
-    def draw_terrain(self, x, y):
-        """Draw terrain at x, y to the terminal"""
-        if x >= 0 and y >= 0 and x < MAP_WIDTH and y < MAP_HEIGHT:
-            num = self.terrain_data[y][x]
+    def draw_terrain(self, map_x, map_y, screen_x, screen_y):
+        """Draw terrain at map_x, map_y to the terminal at screen_x, screen_y"""
+        if map_x >= 0 and map_y >= 0 and map_x < MAP_WIDTH and map_y < MAP_HEIGHT:
+            num = self.terrain_data[map_y][map_x]
         else:
             num = -1
-        if num < -0.2:
+        if num == -1:
+            # Outside the map
+            terminal.puts(screen_x, screen_y, ' ')
+        elif num < -0.2:
             # Water
             terminal.color(terminal.color_from_name('blue'))
-            terminal.puts(x, y, '~')
+            terminal.puts(screen_x, screen_y, '~')
         elif num < 0.5:
             # Grass
             terminal.color(terminal.color_from_name('green'))
-            terminal.puts(x, y, '.')
+            terminal.puts(screen_x, screen_y, '.')
         else:
             # Mountains
             terminal.color(terminal.color_from_name('gray'))
-            terminal.puts(x, y, '^')
+            terminal.puts(screen_x, screen_y, '^')
 
     def draw_player(self):
         terminal.color(terminal.color_from_name('white'))
-        terminal.puts(self.player_x, self.player_y, '@')
+        terminal.puts(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2, '@')
+
+    def to_map_x(self, screen_x):
+        """Convert screen x coordinate to map x coordinate"""
+        return screen_x + self.player_x - SCREEN_WIDTH // 2
+
+    def to_map_y(self, screen_y):
+        """Convert screen y coordinate to map y coordinate"""
+        return screen_y + self.player_y - SCREEN_HEIGHT // 2
 
     def draw_world(self):
-        for y in range(MAP_HEIGHT):
-            for x in range(MAP_WIDTH):
-                self.draw_terrain(x, y)
+        for screen_y in range(SCREEN_HEIGHT):
+            for screen_x in range(SCREEN_WIDTH):
+                self.draw_terrain(
+                    self.to_map_x(screen_x), self.to_map_y(screen_y), screen_x, screen_y)
         self.draw_player()
 
     def move_player(self, dx, dy):
